@@ -39,24 +39,28 @@
 | 欄位 | PRD 說明 | 型別 | nullable | unique | 索引 | 備註 |
 |---|---|---|---|---|---|---|
 | `id` | Prompt / Skill ID | UUID | NO | YES (PK) | PK | |
-| `title` | 標題 | VARCHAR(100) | NO | NO | — | 搜尋會用到（FR-10） |
-| `categoryId` | 所屬類別 ID | ❓ | ❓ | NO | ❓ | FK → Category，見 D-05 |
-| `tags` | 標籤陣列 | ❓ | ❓ | NO | ❓ | 見 **D-02（最重要的一題）** |
-| `content` | Prompt / Skill 內容 | ❓ | NO | NO | ❓ | 可能很長，搜尋也會用到 |
-| `useCase` | 適用情境 | ❓ | ❓ | NO | — | |
-| `exampleInput` | 範例輸入，可選 | ❓ | YES | NO | — | PRD 明說可選 |
-| `createdAt` | 建立時間 | ❓ | NO | NO | ❓ | 列表預設排序會用到？ |
-| `updatedAt` | 更新時間 | ❓ | NO | NO | — | |
+| `title` | 標題 | VARCHAR(100) | NO | NO | — | 搜尋會用到（FR-10），`ILike` 模糊搜尋走不到 B-tree 索引 |
+| `categoryId` | 所屬類別 ID | UUID | NO | NO | **不建** | FK → Category，`ON DELETE RESTRICT`（D-05）。見 **D-08** |
+| `tags` | 標籤陣列 | TEXT[] | **NO**（預設 `'{}'`） | NO | **不建** | D-02 方案 B。GIN 索引留到需要時再加，見 **D-08** |
+| `content` | Prompt / Skill 內容 | TEXT | NO | NO | — | 長度由 zod 限制（A-06） |
+| `useCase` | 適用情境 | TEXT | YES | NO | — | 見下方「如何判斷必填」 |
+| `exampleInput` | 範例輸入，可選 | TEXT | YES | NO | — | PRD 明說可選 |
+| `createdAt` | 建立時間 | TIMESTAMPTZ | NO | NO | **不建** | 列表預設排序 `DESC`（A-03），但資料量不到，不需索引 |
+| `updatedAt` | 更新時間 | TIMESTAMPTZ | NO | NO | — | |
+
+> **陣列欄位為何不該 nullable**：若 `tags` 允許 null，「沒有標籤」就有 `null` 和 `[]` 兩種表示法，程式每次都要判斷兩種情況。設成 `NOT NULL DEFAULT '{}'`，空狀態只有一種。**同一個語意有兩種表示法，就是 bug 的來源。**
+
+> **如何判斷哪些欄位必填**：PRD 第十四節的錯誤處理清單只列了「標題空白 → 400」和「內容空白 → 400」，**沒有列適用情境或標籤空白**。這是需求方對「哪些是必填」的間接答案——用錯誤處理清單反推欄位必填性，比憑感覺猜可靠。
 
 ### Favorite
 
 | 欄位 | PRD 說明 | 型別 | nullable | 備註 |
 |---|---|---|---|---|
-| `userId` | 會員 ID | ❓ | NO | FK → User |
-| `skillId` | Prompt / Skill ID | ❓ | NO | FK → SkillItem |
-| `createdAt` | 收藏時間 | ❓ | NO | |
+| `userId` | 會員 ID | UUID | NO | FK → User，**複合 PK 第 1 欄**，`ON DELETE CASCADE` |
+| `skillId` | Prompt / Skill ID | UUID | NO | FK → SkillItem，**複合 PK 第 2 欄**，`ON DELETE CASCADE` |
+| `createdAt` | 收藏時間 | TIMESTAMPTZ | NO | 它的存在決定了 D-07 必須用獨立 Entity |
 
-> 注意 PRD 沒有給 Favorite 一個 `id` 欄位。這是刻意的還是省略的？→ 見 D-06。
+> PRD 沒給 Favorite 一個 `id` 欄位——結論是**刻意的**。`(userId, skillId)` 就是複合主鍵，見 D-06。
 
 ---
 
@@ -76,7 +80,11 @@
 - 如果換成「使用者的私人筆記」這種功能，答案會不一樣嗎？
 
 **我的決定**：
+- 使用 UUID
+
 **理由**：
+- 由系統自動產生
+
 **放棄的方案與代價**：
 
 ---
@@ -115,15 +123,11 @@ PRD 說 tags 是「標籤陣列」，PostgreSQL 有四種存法：
 
 > 這一題沒有唯一正確答案。重點是你能說出**為什麼在「這個專案、這個時程」選這個方案**——這正是發表時「哪些是 AI 建議但我自己做了判斷」的好素材。
 
-**我的決定**（✅ 2026-08-03）：**方案 B — PostgreSQL 原生 `text[]` + GIN 索引**
+**我的決定**（✅ 2026-08-03）：**方案 B — PostgreSQL 原生 `text[]`**，**先不建 GIN 索引**（見「索引策略」）
 
 ```ts
 @Column('text', { array: true, default: () => "'{}'" })
 tags!: string[]
-```
-
-```sql
-CREATE INDEX idx_skill_item_tags ON skill_item USING GIN (tags);
 ```
 
 **理由**（依重要性）：
@@ -162,7 +166,10 @@ CREATE INDEX idx_skill_item_tags ON skill_item USING GIN (tags);
 - 如果只在查詢時用 `ILike`，unique 約束還有效嗎？
 
 **我的決定**：
+- `email` 欄位加 unique 約束，寫入前正規化成小寫
+
 **理由**：
+- 這是最簡單、最安全的做法。資料庫層保證唯一性，應用層保證大小寫一致。
 
 ---
 
@@ -180,7 +187,11 @@ CREATE INDEX idx_skill_item_tags ON skill_item USING GIN (tags);
 - TypeScript 的 union type（`'member' | 'admin'`）能防住這個錯嗎？為什麼不能？（提示：TS 型別在執行期還存在嗎？）
 
 **我的決定**：
+- 使用 PostgreSQL `enum` 型別
+
 **理由**：
+- 這個專案只有 `member` / `admin` 兩種角色，未來 18 天內不會增加
+- 資料庫層保證只有合法值，避免大小寫錯誤
 
 ---
 
@@ -199,10 +210,14 @@ PRD 第十五節：「管理者刪除已有資料的類別 → 阻擋刪除或�
 4. `ON DELETE CASCADE` 在這裡為什麼是**危險**的選擇？（想像管理者刪掉一個類別，結果底下 50 筆 Prompt 都消失了）
 
 **我的決定**：
-- `categoryId` nullable：true
-- 刪除行為（DB 層）：
-- 攔阻位置（哪幾層）：
+- `categoryId` nullable：false（必填）每筆 SkillItem 都要有類別
+- 刪除行為（DB 層）：`ON DELETE RESTRICT`
+- 攔阻位置（哪幾層）：兩層都做
+
 **理由**：
+- 每筆 SkillItem 都必須有類別
+- 刪除類別時，`ON DELETE RESTRICT` 保證資料庫層不會誤刪
+- 兩層都做的攔阻，使用者會看到友善的錯誤訊息
 
 ---
 
@@ -232,12 +247,45 @@ PRD 第十五節明確要求：「同一會員重複收藏同一筆資料 → �
 4. 這張表未來會被怎麼查？「我的收藏」是 `WHERE userId = ?`，「這篇被誰收藏」是 `WHERE skillId = ?`。複合索引 `(userId, skillId)` 對哪一種查詢有效、對哪一種無效？（提示：複合索引的最左前綴原則）
 5. 刪除 SkillItem 或 User 時，相關的 Favorite 該怎麼處理？這裡的 `ON DELETE` 該選什麼、為什麼和 D-05 的答案不同？
 
-**我的決定**：
-- 主鍵方案：
-- 唯一約束：
-- 索引：
-- ON DELETE 行為（user / skill 各自）：
+**我的決定**（✅ 2026-08-03）：**方案 A — 複合主鍵 `(userId, skillId)`**
+
+- 主鍵方案：複合主鍵，**欄位順序 `userId` 在前**（順序有意義，見下）
+- 唯一約束：不需額外加——主鍵本身就是唯一約束
+- 索引：主鍵自動建立複合索引 `(userId, skillId)`，不需額外索引
+- ON DELETE 行為：`userId` → **CASCADE**；`skillId` → **CASCADE**
+
 **理由**：
+
+1. **代理主鍵永遠不會被使用**。PRD 第十二節的 API 是 `DELETE /favorites/:skillId`，不是 `/favorites/:favoriteId`。`userId` 從 token 來、`skillId` 從 URL 來，**兩者剛好組成複合主鍵**——多一個 `id` 欄位是純成本。
+2. **少一個索引**。方案 B 會有兩個 B-tree（PK 索引 + unique 索引），其中 PK 索引沒有任何查詢會用到。方案 A 的主鍵索引同時兼任防重複的角色。
+3. 防重複由主鍵天然保證，不需要額外的 unique 約束。
+
+**放棄的方案**：B（代理主鍵 + unique）。它符合「每張表都該有單一代理主鍵」的團隊慣例，若未來 Favorite 需要被其他表以單一 FK 引用，B 會比較方便——但這個需求在本專案不存在。
+
+#### 複合主鍵的欄位順序：為什麼 `userId` 必須在前
+
+複合索引遵守**最左前綴原則**——索引只能從最左欄位開始使用：
+
+| 查詢 | `(userId, skillId)` | `(skillId, userId)` |
+|---|:---:|:---:|
+| 我的收藏 `WHERE userId = ?`（FR-13 **必做**） | ✅ 走索引 | ❌ 全表掃描 |
+| 這筆被誰收藏 `WHERE skillId = ?` | ❌ 全表掃描 | ✅ 走索引 |
+| 檢查是否已收藏 `WHERE userId = ? AND skillId = ?` | ✅ | ✅ |
+
+PRD 必做的是「我的收藏」（FR-13），所以 `userId` 放前面。
+未來若列表要顯示「收藏數」（`WHERE skillId = ?`），再單獨加一個 `skillId` 的索引即可。
+
+#### 為什麼這裡是 CASCADE，而 D-05 是 RESTRICT
+
+> **判斷準則：子資料離開父資料還有獨立價值嗎？有 → RESTRICT；沒有 → CASCADE。**
+
+| 關聯 | 子資料的性質 | 選擇 |
+|---|---|---|
+| Category → SkillItem | Prompt 內容是**有獨立價值的資產**。CASCADE 會讓管理者誤刪一個類別就毀掉底下 50 筆 Prompt | **RESTRICT**（D-05） |
+| User → Favorite | 收藏只是**關聯紀錄**，使用者不存在了，紀錄沒有意義 | **CASCADE** |
+| SkillItem → Favorite | 同上，指向不存在項目的收藏就是垃圾資料 | **CASCADE** |
+
+同一個問題在不同關聯上答案相反——這正是為什麼**每個 FK 都要單獨決定**，而不是套用 ORM 預設值。
 
 #### 已釐清的技術細節（2026-08-03 討論產出，實作時直接用）
 
@@ -303,8 +351,61 @@ TypeORM 有兩種寫法表達 M:N：
 - 如果未來要做「最近收藏的 10 筆」（依收藏時間排序），哪種方案做得到？
 - 「Favorite 是不是一個實體」和「Favorite 是不是只是關聯」，判斷標準是什麼？
 
-**我的決定**：
-**理由**：
+**我的決定**（✅ 2026-08-03）：**獨立 Entity + 兩個 `@ManyToOne`**
+
+**理由——這題是被需求決定的，不是偏好選擇**：
+
+TypeORM 的 `@ManyToMany` + `@JoinTable` 自動產生的中間表**只有兩個 FK 欄位，塞不進第三個欄位**。而 PRD 第十三節的 Favorite 有 `createdAt`（收藏時間）。所以 `@ManyToMany` 直接被排除。
+
+> **判斷準則：中間表只有兩個 FK → 用 `@ManyToMany` 讓 ORM 託管；有任何額外欄位、或需要被獨立查詢/排序 → 它是一個實體，要自己定義 Entity。**
+
+連帶好處：獨立 Entity 讓「最近收藏的 10 筆」（PRD 第二十節加分項「最近使用」）做得到——`ORDER BY createdAt DESC LIMIT 10`。用 `@ManyToMany` 的話這個功能根本沒有資料可排。
+
+**代價**：`User` 與 `SkillItem` 之間沒有直接的 `@ManyToMany` 屬性可用，查詢「某使用者收藏的所有 SkillItem」要透過 Favorite 這一層 relation（`favorites.skill`），程式碼稍長。這是換取 `createdAt` 的必要代價。
+
+---
+
+### D-08 索引策略 ⭐ 這題是 AI 建議被推翻的案例
+
+**背景**：AI 最初建議為 `tags` 建 GIN 索引、為 `createdAt` 與 `categoryId` 建索引。**用本文件 D-02 建立的三個檢查問題重新檢驗後，決定全部不建。**
+
+| 檢查問題 | GIN / 效能索引的答案 |
+|---|---|
+| 1. PRD 現在需要它嗎？ | **不需要**。資料量約 10-30 筆，PostgreSQL 查詢規劃器會直接選 Seq Scan——讀索引再回表比整張表掃過去更貴。**建了也不會被使用** |
+| 2. 不做，以後補做會不會很痛？ | **完全不痛**。`CREATE INDEX` 一行 SQL，不改程式碼、不用資料搬移、隨時可 `DROP`。索引是所有技術決策裡**最可逆**的一種 |
+| 3. 做了會不會拖慢核心功能？ | 會。TypeORM 的 `@Index()` 無法指定 GIN，要在 migration 手動寫 raw SQL + `down()` 的 DROP，多一個維護點 |
+
+#### 索引不是免費的
+
+- **佔磁碟空間**（GIN 尤其大——它為陣列裡的每個元素建反向索引）
+- **每次 INSERT / UPDATE / DELETE 都要同步維護** → 寫入變慢
+- **小表上零效益**，規劃器根本不會選它
+
+#### 關鍵區分：兩種索引的目的不同
+
+| 類型 | 本專案的例子 | 要不要建 | 為什麼 |
+|---|---|---|---|
+| **約束性索引** | PK 索引（4 張表）、`UNIQUE(user.email)`、`UNIQUE(category.name)`、Favorite 複合 PK | ✅ **要** | 目的是**保證正確性**，不是加速查詢。沒有它就防不了重複資料 |
+| **效能性索引** | `tags` GIN、`skill_item.createdAt`、`skill_item.categoryId` | ❌ **不建** | 純優化。資料量不到就是純成本 |
+
+#### 什麼時候才該加
+
+> **先測量再優化。** 用 `EXPLAIN ANALYZE` 看到 Seq Scan 且執行時間真的有問題，才加索引。
+
+粗略量級：幾千筆以上開始有感，幾萬筆以上不加會痛。本專案差三個數量級。
+
+**未來要加的話**（記錄下來，之後不用重新查）：
+
+```sql
+-- tags 陣列包含查詢
+CREATE INDEX idx_skill_item_tags ON skill_item USING GIN (tags);
+-- 列表排序
+CREATE INDEX idx_skill_item_created_at ON skill_item (created_at DESC);
+-- FK（PostgreSQL 不會自動為 FK 建索引；ON DELETE RESTRICT 的檢查會受益）
+CREATE INDEX idx_skill_item_category_id ON skill_item (category_id);
+```
+
+> **發表素材**（PRD 第二十四節「哪些是 AI 建議但自己做了判斷」）：AI 建議建 GIN 索引，我用它自己提供的「過度設計三問」反過來檢驗，發現在本專案資料量下該索引不會被查詢規劃器使用，且補做的成本極低（一行 SQL、零遷移），因此決定不做。**判斷依據是「這個決定可不可逆」與「現在是否測量到問題」，而不是「這個技術是否先進」。**
 
 ---
 
@@ -372,45 +473,64 @@ erDiagram
     }
     SkillItem {
         uuid id PK
-        uuid categoryId FK "ON DELETE ❓ 見 D-05"
-        varchar title
-        text_array tags "PostgreSQL text[] + GIN 索引，見 D-02"
-        text content
-        text useCase
+        uuid categoryId FK "NOT NULL, ON DELETE RESTRICT (D-05)"
+        varchar title "VARCHAR(100), NOT NULL"
+        text_array tags "text[] NOT NULL DEFAULT '{}' (D-02)，不建 GIN 索引 (D-08)"
+        text content "NOT NULL, 長度由 zod 限制"
+        text useCase "nullable"
         text exampleInput "nullable"
-        timestamptz createdAt
+        timestamptz createdAt "列表預設排序 DESC (A-03)，不建索引 (D-08)"
         timestamptz updatedAt
     }
     Favorite {
-        uuid userId FK "ON DELETE ❓ 見 D-06"
-        uuid skillId FK "ON DELETE ❓ 見 D-06"
-        timestamptz createdAt
+        uuid userId PK "同時是 FK → User, ON DELETE CASCADE"
+        uuid skillId PK "同時是 FK → SkillItem, ON DELETE CASCADE"
+        timestamptz createdAt "它的存在決定 D-07 用獨立 Entity"
     }
 ```
 
-> 圖中 id 型別依 D-01 標為 `uuid`。若 D-01 最終改選自增整數，記得同步改回 `int`——**四張表要一致**，混用兩種主鍵型別會讓 FK 與程式碼都變醜。
+> - 圖中 id 型別依 D-01 標為 `uuid`，**四張表一致**（混用兩種主鍵型別會讓 FK 與程式碼都變醜）。
+> - Favorite 的 `userId` / `skillId` **同時是複合主鍵與外鍵**，順序 `userId` 在前（最左前綴原則，見 D-06）。
 
 **檢查清單**
 - [x] 每條線的兩端符號都是想清楚後選的
 - [x] 每個 1:N 的 FK 都在「多」的那邊（`categoryId` 在 SkillItem）
 - [x] `tags` 反映 D-02 的決定（`text[]` 單欄位，不需額外表）
-- [ ] 每個 FK 都註記了 ON DELETE 行為 ← 待 D-05、D-06 決定
-- [ ] Favorite 的主鍵標示符合 D-06 的決定 ← 待決定
+- [x] 每個 FK 都註記了 ON DELETE 行為（Category→SkillItem RESTRICT；User/SkillItem→Favorite CASCADE）
+- [x] Favorite 的主鍵標示符合 D-06 的決定（複合主鍵，`userId` 在前）
+
+✅ **資料模型設計已定稿，可以開始寫 Entity。**
 
 ---
 
-## 四、假設清單
+## 四、假設清單（✅ 2026-08-03 定案）
 
-PRD 沒寫、但實作必須有答案的事情。寫下你的假設與理由。
+PRD 沒寫、但實作必須有答案的事情。這些是**我的判斷**，發表時可以說明為什麼這樣假設。
 
-| ID | 假設 | 理由 | 影響 |
-|---|---|---|---|
-| A-01 | 列表 API 要不要分頁？ | | |
-| A-02 | 管理者可以收藏嗎？（PRD 只說會員可以） | | |
-| A-03 | 列表預設排序是什麼？ | | |
-| A-04 | 有沒有註冊 API？（PRD 只要求登入 + seed 測試帳號） | | |
-| A-05 | 搜尋是否要區分大小寫？中文搜尋有影響嗎？ | | |
-| A-06 | `content` 有長度上限嗎？（`varchar` vs `text`） | | |
+| ID | 假設 | 決定 | 理由 | 影響 |
+|---|---|---|---|---|
+| A-01 | 列表 API 要不要分頁？ | **要，前後端都做**（前端做精簡版） | PRD 沒要求，但沒分頁的列表 API 是隱形炸彈；改 API 契約的成本遠高於加前端 UI | `GET /skills`、`GET /categories`、`GET /me/favorites` 都要 `page`/`limit`，response 要包 meta。**seed 12 筆 + `limit` 預設 10 → 剛好 2 頁**，見下方「分頁的 demo 算術」 |
+| A-02 | 管理者可以收藏嗎？ | **可以** | 管理者也是使用者；PRD 只是沒提，不是禁止。且實作更簡單——只掛 `authMiddleware`，不用檢查角色 | `api-spec.md` 的 `/favorites/*` 與 `/me/favorites` 權限從 `member` 改標 **`已登入`** |
+| A-03 | 列表預設排序 | **`createdAt DESC`**（新的在前） | 收藏庫的通用慣例，新增的資料要馬上看得到（後台新增後前台驗證也方便） | 排序欄位**不建索引**（D-08）：10-30 筆的 sort 成本可忽略 |
+| A-04 | 有沒有註冊 API？ | **不做** | PRD 第五節非目標排除了 Email 驗證等相關流程，第六節只要求 seed 1 admin + 1 member。做註冊要多做密碼強度驗證、重複 email 處理、前端註冊頁 | 帳號只從 seed 產生；`User` 不需要註冊相關欄位（驗證狀態、驗證碼等） |
+| A-05 | 搜尋要區分大小寫嗎？ | **不區分**，用 `ILike` | 使用者搜 `vue` 要能找到 `Vue`。中文無大小寫概念所以不受影響，但英文 Prompt 標題常大小寫混用 | `GET /skills?keyword=` 用 `ILike '%keyword%'`；注意**前置 `%` 的模糊搜尋走不到 B-tree 索引**，資料量大時要改方案（本專案資料量小，可接受） |
+| A-06 | `content` 有長度上限嗎？ | **`TEXT` + zod 限長** | PostgreSQL 的 `TEXT` 與 `VARCHAR(n)` 儲存方式與效能完全相同（官方文件明說），唯一差別是 `VARCHAR(n)` 會在寫入時檢查長度。把長度驗證放應用層，才能回 PRD 第十四節要求的友善 400 而非資料庫錯誤 | 所有長文字欄位用 `TEXT`；zod schema 加 `.max()`；`express.json({ limit: '1mb' })` 已是第一層防線 |
+
+> **關於 A-06 的常見誤解**：「TEXT 比 VARCHAR 慢」的說法來自 MySQL / SQL Server，在 PostgreSQL 不成立。跨資料庫的效能直覺不能直接搬。
+
+#### 分頁的 demo 算術（A-01 補充）
+
+**分頁能不能 demo，取決於 `seed 筆數 > limit`，不是絕對筆數。** 所以不需要塞很多假資料：
+
+| 方案 | seed 筆數 | `limit` 預設 | 頁數 | 評估 |
+|---|---|---|---|---|
+| 最初建議 | 25-30 | 20 | 2 | seed 太累，假資料品質也難維持 |
+| **✅ 採用** | **12** | **10** | **2** | demo 效果相同，seed 省一半以上 |
+| 更省 | 10 | 6 | 2 | 可行，但 `limit=6` 有點刻意 |
+
+**前端做精簡版**：只做「上一頁 / 下一頁」+「第 1 / 2 頁」文字，**不做頁碼列表**。成本低很多，demo 展示效果一樣。
+
+> seed 的 12 筆要有品質——PRD 第十九節「產品用心點」提到「提供範例資料，讓第一次打開的人有東西可以測」。12 筆真實可用的 Prompt 比 30 筆 `測試資料 1`、`測試資料 2` 有價值得多。
 
 ---
 

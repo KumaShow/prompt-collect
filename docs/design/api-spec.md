@@ -69,18 +69,43 @@ Phase 5 寫 Vue 的時候，你會非常感謝現在把 response 形狀寫清楚
 
 ---
 
-### G-04 列表端點的通用參數
+### G-04 列表端點的通用參數（✅ 2026-08-03：決定做完整分頁，前後端都做）
 
-| 參數 | 用途 | 預設值 | 決定 |
+依 [data-model.md](./data-model.md) 假設 A-01。適用於 `GET /skills`、`GET /categories`、`GET /me/favorites`。
+
+| 參數 | 用途 | 預設值 | 待決定 |
 |---|---|---|---|
-| `page` | 第幾頁（從 1 或 0 開始？） | ❓ | ❓ |
-| `limit` | 每頁筆數（上限要不要設？） | ❓ | ❓ |
-| `sort` | 排序欄位與方向 | ❓ | ❓ |
+| `page` | 第幾頁 | ❓ 從 1 開始還是 0？ | 建議 1（和使用者看到的頁碼一致，少一次 off-by-one） |
+| `limit` | 每頁筆數 | **10** | **必須設上限**，見下 |
+| `sort` | 排序欄位與方向 | `createdAt DESC`（A-03） | 要不要讓前端指定？ |
+
+> `limit` 預設 10 是刻意搭配 seed 的 12 筆——剛好 2 頁，分頁功能 demo 得出來又不用塞大量假資料。前端只做「上一頁 / 下一頁 + 第 X / Y 頁」精簡版。詳見 [data-model.md](./data-model.md) 的「分頁的 demo 算術」。
 
 **引導問題**
-- 如果不設 `limit` 上限，有人打 `?limit=999999` 會發生什麼事？
-- 分頁資訊要回傳哪些欄位才夠前端畫分頁元件？（`total`？`totalPages`？`hasNext`？）
-- PRD 沒要求分頁。**現在做 vs 之後做**的成本差多少？（提示：現在做只是多兩個參數；之後做要改 response 形狀，前端全部連帶改）
+- 如果不設 `limit` 上限，有人打 `?limit=999999` 會發生什麼事？（提示：資料庫要撈全表、序列化成 JSON、佔滿記憶體——這是一種阻斷服務的手法）
+- zod 可以直接處理這件事嗎？（提示：`z.coerce.number().int().min(1).max(100).default(20)`）
+- `page=0` 或 `page=-1` 送進 `OFFSET` 會發生什麼？
+
+**分頁 response 形狀（待你定稿）**
+
+```jsonc
+{
+  "status": "success",
+  "data": [ /* ... */ ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 27,        // 總筆數，前端算總頁數要用
+    "totalPages": 2     // 要不要後端算好？
+  }
+}
+```
+
+**引導問題**：`totalPages` 讓後端算好 vs 前端用 `Math.ceil(total / limit)` 自己算——哪個好？（提示：想想「同一份邏輯有兩個實作」會發生什麼事）
+
+> ⚠️ **實作提醒**：分頁要用 TypeORM 的 `findAndCount()` 而不是 `find()`——它會同時回傳「這一頁的資料」和「符合條件的總筆數」。若用 `find()` 再另外 `count()`，兩次查詢之間資料可能變動，總數會對不上。
+>
+> ⚠️ **Demo 提醒**：seed **12 筆**（PRD 建議 5-10 筆，只需稍微多一點）搭配 `limit` 預設 10 → 剛好 2 頁，分頁翻得動。品質重於數量：12 筆真實可用的 Prompt 比 30 筆 `測試資料 N` 有價值。
 
 ---
 
@@ -143,11 +168,14 @@ PRD 第十四節已給定狀態碼與訊息，錯誤碼（`code`）欄位待你�
 | Method | Path | 權限 | 說明 | 契約狀態 |
 |---|---|---|---|---|
 | `GET` | `/categories` | 已登入 | 類別列表（FR-06） | ❓ |
-| `GET` | `/skills` | 已登入 | 列表 + `keyword` + `categoryId`（FR-08/10/11） | ❓ |
+| `GET` | `/skills` | 已登入 | 列表 + `keyword` + `categoryId` + 分頁（FR-08/10/11） | ❓ |
 | `GET` | `/skills/:id` | 已登入 | 詳情（FR-09） | ❓ |
-| `POST` | `/favorites/:skillId` | member | 收藏（FR-12） | ❓ |
-| `DELETE` | `/favorites/:skillId` | member | 取消收藏 | ❓ |
-| `GET` | `/me/favorites` | member | 我的收藏（FR-13） | ❓ |
+| `POST` | `/favorites/:skillId` | **已登入** | 收藏（FR-12） | ❓ |
+| `DELETE` | `/favorites/:skillId` | **已登入** | 取消收藏 | ❓ |
+| `GET` | `/me/favorites` | **已登入** | 我的收藏（FR-13） | ❓ |
+
+> **權限標註變更紀錄（2026-08-03）**：PRD 第十二節把收藏相關 API 標為 `member`，本專案改標 **`已登入`**——依 [data-model.md](./data-model.md) 假設 A-02「管理者也可以收藏」。
+> 實作上只掛 `authMiddleware`，**不掛** `requireRole('member')`。這是刻意偏離 PRD 的決定，發表時要能說明理由。
 
 ### 後台
 
