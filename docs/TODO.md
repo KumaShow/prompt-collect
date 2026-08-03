@@ -28,12 +28,12 @@
 
 **學習目標**：理解 Node.js 專案的組成（package.json、tsconfig、scripts），跑起第一個 Express server。
 
-- [ ] 安裝環境：Node.js LTS、PostgreSQL（本機或 Docker）、確認 `node -v`、`psql` 可用
-- [ ] 建立 monorepo 結構：根目錄 + `api/` + `web/`
-- [ ] `api/`：初始化 `package.json`，安裝 express、typescript、ts-node-dev（或 tsx），設定 `tsconfig.json`
-- [ ] 實作 `GET /health` 回傳服務狀態（PRD FR-01）
-- [ ] 設定 `dotenv` 管理環境變數（port、之後的 DB 連線字串、JWT secret）
-- [ ] 建立 git repo，寫第一個 commit，加上 `.gitignore`（node_modules、.env）
+- [x] 安裝環境：Node.js LTS、PostgreSQL（本機或 Docker）、確認 `node -v`、`psql` 可用
+- [x] 建立 monorepo 結構：根目錄 + `api/` + `web/`
+- [x] `api/`：初始化 `package.json`，安裝 express、typescript、ts-node-dev（或 tsx），設定 `tsconfig.json`
+- [x] 實作 `GET /health` 回傳服務狀態（PRD FR-01）
+- [x] 設定 `dotenv` 管理環境變數（port、之後的 DB 連線字串、JWT secret）
+- [x] 建立 git repo，寫第一個 commit，加上 `.gitignore`（node_modules、.env）
 
 **引導問題（自己先想，再找答案）**
 - `dependencies` 和 `devDependencies` 差在哪？typescript 該放哪邊？
@@ -47,7 +47,7 @@
 
 **學習目標**：理解資料表關聯（1對多、多對多）、Entity 定義、migration 概念。
 
-- [ ] 安裝 typeorm、pg、reflect-metadata，設定 DataSource 連線
+- [x] 安裝 typeorm、pg、reflect-metadata，設定 DataSource 連線
 - [ ] 依 PRD 第十三節建立四個 Entity：`User`、`Category`、`SkillItem`、`Favorite`
 - [ ] 想清楚關聯再動手：
   - Category ↔ SkillItem 是什麼關係？

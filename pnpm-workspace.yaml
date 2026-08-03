@@ -1,0 +1,7 @@
+# pnpm workspace package discovery rules.
+# Only folders matching the patterns below are treated as workspace projects.
+packages:
+  # Include first-level app projects under apps/, e.g. apps/web, apps/api
+  - apps/*
+  # Include first-level shared projects under packages/, e.g. packages/ui
+  - packages/*
