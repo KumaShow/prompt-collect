@@ -2,7 +2,7 @@
 
 - **分類**：TypeScript + TypeORM
 - **相關檔案**：`apps/api/src/database/entities/Category.ts`、`apps/api/src/database/entities/SkillItem.ts`、`apps/api/src/database/data-source.ts`
-- **狀態**：規劃中；資料模型已定義，Entity 關聯尚未實作
+- **狀態**：已實作；初始 migration 已成功產生
 - **關鍵字**：`@ManyToOne`、`@OneToMany`、`@JoinColumn`、foreign key、`onDelete`、Relation
 
 ## 1. 問題背景
@@ -45,6 +45,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import type { Relation } from 'typeorm';
 import { Category } from './Category.js';
 
 @Entity()
@@ -57,7 +58,7 @@ export class SkillItem {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'categoryId' })
-  category!: Category;
+  category!: Relation<Category>;
 
   @Column({ type: 'varchar', length: 100, nullable: false })
   title!: string;
@@ -74,6 +75,7 @@ export class SkillItem {
 
 ```typescript
 import { Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import type { Relation } from 'typeorm';
 import { SkillItem } from './SkillItem.js';
 
 @Entity()
@@ -82,7 +84,7 @@ export class Category {
   id!: string;
 
   @OneToMany(() => SkillItem, (skillItem) => skillItem.category)
-  skillItems!: SkillItem[];
+  skillItems!: Relation<SkillItem[]>;
 }
 ```
 
@@ -184,6 +186,7 @@ entities: [User, Category, SkillItem],
 - `onDelete: 'RESTRICT'` 是資料庫刪除規則；`cascade: true` 則是 ORM 儲存時是否連帶儲存，兩者用途不同。
 - `Category.skillItems` 不會自動有資料；必須在查詢時載入它。
 - `Category` 與 Tag 的角色不同：Category 是單選的本質分類，Tag 則是可多選的特徵標記，因此不應為 Category 建多對多關聯。
+- ESM 搭配 `emitDecoratorMetadata` 時，雙向 Entity import 可能產生初始化錯誤；Relation 屬性應使用 `Relation<T>`。詳見 [ESM Entity 循環依賴與 `Relation<T>`](./005-esm-entity-circular-dependency.md)。
 
 ## 9. 實作前後檢查清單
 

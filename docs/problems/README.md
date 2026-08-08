@@ -6,7 +6,7 @@
 
 | 分類 | 內容 |
 |---|---|
-| [TypeScript + TypeORM](./typescript-typeorm/) | Entity 欄位初始化、`strictPropertyInitialization`、`nullable`、關聯映射與型別設計 |
+| [TypeScript + TypeORM](./typescript-typeorm/) | Entity 欄位初始化、關聯映射、ESM metadata 與 migration 工作流程 |
 
 ## 建議記錄格式
 
