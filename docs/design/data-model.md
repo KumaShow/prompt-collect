@@ -22,9 +22,10 @@
 | `name` | 顯示名稱 | VARCHAR(50) | NO | NO | — | 長度上限？ |
 | `email` | 登入信箱或帳號 | VARCHAR(320) | NO | YES | UNIQUE | 見 D-03 |
 | `passwordHash` | 密碼雜湊，不要存明碼 | VARCHAR(60) | NO | NO | — | bcrypt 輸出固定 60 字元 |
-| `role` | `member` 或 `admin` | VARCHAR(10) | NO | NO |  | 見 D-04 列舉存法 |
-| `createdAt` | （PRD 未提，建議補） | — | — | — | — | 幾乎所有表都該有 |
-| `updatedAt` | （PRD 未提，建議補） | — | — | — | — | 同上 |
+| `role` | `member` 或 `admin` | VARCHAR(20) | NO | NO | CHECK | 見 D-04；不使用資料庫 enum |
+| `createdAt` | 建立時間 | TIMESTAMPTZ | NO | NO | — | 幾乎所有表都該有 |
+| `updatedAt` | 更新時間 | TIMESTAMPTZ | NO | NO | — | 同上 |
+| `deletedAt` | 軟刪除時間 | TIMESTAMPTZ | YES | NO | — | 用於軟刪除（未來做停用類別時可用） |
 
 ### Category
 
@@ -33,6 +34,10 @@
 | `id` | 類別 ID | UUID | NO | YES (PK) | PK | |
 | `name` | 類別名稱 | VARCHAR(50) | NO | YES | UNIQUE | 類別名稱可以重複嗎？ |
 | `description` | 類別說明 | TEXT | YES | NO | — | PRD 沒說是否必填 |
+| `createdAt` | 建立時間 | TIMESTAMPTZ | NO | NO | — | 幾乎所有表都該有 |
+| `updatedAt` | 更新時間 | TIMESTAMPTZ | NO | NO | — | 同上 |
+| `deletedAt` | 軟刪除時間 | TIMESTAMPTZ | YES | NO | — | 用於軟刪除（未來做停用類別時可用） |
+
 
 ### SkillItem
 
@@ -47,6 +52,7 @@
 | `exampleInput` | 範例輸入，可選 | TEXT | YES | NO | — | PRD 明說可選 |
 | `createdAt` | 建立時間 | TIMESTAMPTZ | NO | NO | **不建** | 列表預設排序 `DESC`（A-03），但資料量不到，不需索引 |
 | `updatedAt` | 更新時間 | TIMESTAMPTZ | NO | NO | — | |
+| `deletedAt` | 軟刪除時間 | TIMESTAMPTZ | YES | NO | — | 用於軟刪除（未來做停用帳號時可用） |
 
 > **陣列欄位為何不該 nullable**：若 `tags` 允許 null，「沒有標籤」就有 `null` 和 `[]` 兩種表示法，程式每次都要判斷兩種情況。設成 `NOT NULL DEFAULT '{}'`，空狀態只有一種。**同一個語意有兩種表示法，就是 bug 的來源。**
 
@@ -177,7 +183,7 @@ tags!: string[]
 
 | 方案 | 優點 | 缺點 |
 |---|---|---|
-| varchar + 應用層驗證 | 簡單、新增角色不用改 schema | 資料庫層擋不住錯值（可能存進 `Admin`、`administrator`） |
+| varchar + `CHECK` 約束 | 簡單、不使用 enum，資料庫層也能擋住錯值 | 新增角色仍需 migration 更新約束 |
 | PostgreSQL `enum` 型別 | 資料庫層保證只有合法值 | 新增角色要 migration，且 PostgreSQL 改 enum 有限制 |
 | 獨立 roles 表 + FK | 最有彈性，可做細粒度權限 | 對兩種角色的專案是過度設計 |
 
@@ -187,11 +193,12 @@ tags!: string[]
 - TypeScript 的 union type（`'member' | 'admin'`）能防住這個錯嗎？為什麼不能？（提示：TS 型別在執行期還存在嗎？）
 
 **我的決定**：
-- 使用 PostgreSQL `enum` 型別
+- 使用 `VARCHAR(20)` 搭配 `CHECK (role IN ('member', 'admin'))`，不使用 PostgreSQL `enum` 型別
 
 **理由**：
-- 這個專案只有 `member` / `admin` 兩種角色，未來 18 天內不會增加
-- 資料庫層保證只有合法值，避免大小寫錯誤
+- 維持欄位的可攜性，避免 PostgreSQL `enum` 的型別維護限制
+- 資料庫層仍能保證只有合法值，避免大小寫錯誤
+- 目前只有 `member` / `admin` 兩種角色，不需要為此建立獨立角色表
 
 ---
 
@@ -462,7 +469,7 @@ erDiagram
         varchar name
         varchar email UK
         varchar passwordHash "bcrypt 固定 60 字元"
-        varchar role "member | admin，見 D-04"
+        varchar role "member | admin；CHECK 約束，見 D-04"
         timestamptz createdAt
         timestamptz updatedAt
     }

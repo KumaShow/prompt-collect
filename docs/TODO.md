@@ -2,7 +2,7 @@
 
 > 依據 [PRD.md](./PRD.md) 拆解的分階段開發清單。
 > 開發者：獨立開發（Vue 前端工程師，Node.js 初學者）
-> 今天：2026-07-30 ｜ 成果發表：2026-08-21（**剩 22 天**，比 PRD 的 30 天短，節奏已壓縮）
+> 今天：2026-08-08 ｜ 成果發表：2026-08-21（**剩 13 天**，目前仍在完成 Phase 1）
 
 ## 已確定的技術決策
 
@@ -11,7 +11,7 @@
 | 後端 | Node.js + Express + TypeScript | 學習主目標 |
 | 驗證 | JWT（`jsonwebtoken`） | 前後端分離友善 |
 | 資料庫 | PostgreSQL + TypeORM | PRD 加分項直接做 |
-| 前端 | Vue 3 SPA | 既有強項，壓縮開發時間 |
+| 前端 | Vue 3 SPA + Tailwind CSS | 既有強項，壓縮開發時間 |
 | 結構 | Monorepo：`api/` + `web/` | 單人開發最好管理 |
 | 密碼 | bcrypt 雜湊 | PRD 硬性要求 |
 
@@ -48,8 +48,8 @@
 **學習目標**：理解資料表關聯（1對多、多對多）、Entity 定義、migration 概念。
 
 - [x] 安裝 typeorm、pg、reflect-metadata，設定 DataSource 連線
-- [ ] 依 PRD 第十三節建立四個 Entity：`User`、`Category`、`SkillItem`、`Favorite`
-- [ ] 想清楚關聯再動手：
+- [x] 依 PRD 第十三節建立四個 Entity：`User`、`Category`、`SkillItem`、`Favorite`
+- [x] 想清楚關聯再動手：
   - Category ↔ SkillItem 是什麼關係？
   - Favorite 為什麼是 User 和 SkillItem 的「中間表」？主鍵怎麼設計才能防止重複收藏（PRD 邊界情境）？
 - [ ] 建立 seed script：塞入 1 個 admin、1 個 member 測試帳號（密碼要先過 bcrypt）、2-3 個類別、5-10 筆範例 Prompt/Skill
