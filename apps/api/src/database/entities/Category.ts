@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
+  Relation
 } from 'typeorm';
 import { SkillItem } from './SkillItem.js';
 
@@ -38,5 +39,5 @@ export class Category {
   deletedAt!: Date | null;
 
   @OneToMany(() => SkillItem, (skillItem) => skillItem.category)
-  skillItems!: SkillItem[];
+  skillItems!: Relation<SkillItem[]>;
 }

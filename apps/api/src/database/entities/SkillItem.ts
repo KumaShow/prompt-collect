@@ -7,6 +7,7 @@ import {
   DeleteDateColumn,
   ManyToOne,
   JoinColumn,
+  Relation
 } from 'typeorm';
 import { Category } from './Category.js';
 
@@ -30,7 +31,7 @@ export class SkillItem {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'categoryId' })
-  category!: Category;
+  category!: Relation<Category>;
 
   @Column({
     type: 'text',
