@@ -1,0 +1,38 @@
+openapi: '3.1.1'
+
+info:
+  title: Prompt Collect API
+  version: '1.0.0'
+  description: API documentation for Prompt Collect
+
+servers:
+  - url: http://localhost:3000
+    description: Local server
+
+tags:
+  - name: System
+    description: 系統狀態
+
+paths:
+  /health:
+    get:
+      tags:
+        - System
+      summary: 檢查 API 狀態
+      responses:
+        '200':
+          description: API 正常運作
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - timestamp
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time

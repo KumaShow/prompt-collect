@@ -156,6 +156,14 @@
 
 ---
 
+## 後續待優化（MVP 與成果發表後）
+
+- [ ] 評估並導入 oRPC contract-first 架構，由共用契約產生 OpenAPI 3.1.1、Swagger UI 與前後端型別；安裝項目、目錄規劃、導入順序及驗收條件見 [oRPC + OpenAPI 後續導入設計](./design/orpc-openapi-plan.md)
+
+> 此項目會影響 API 路由、驗證、錯誤處理、前端 client 與 workspace build，**不是目前優先項目**。先完成既定 MVP，再從 health endpoint 的最小 spike 開始。
+
+---
+
 ## 風險備忘（對照 PRD 第二十一節）
 
 | 風險 | 對策 |
