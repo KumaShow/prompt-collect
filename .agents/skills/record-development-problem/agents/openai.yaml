@@ -1,0 +1,4 @@
+interface:
+  display_name: "開發問題紀錄"
+  short_description: "整理開發討論並建立可追溯的 problems 學習筆記"
+  default_prompt: "使用 $record-development-problem 將本次開發討論整理成分類清楚且有驗證狀態的 problems 紀錄。"

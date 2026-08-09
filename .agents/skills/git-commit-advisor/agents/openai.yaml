@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Commit 建議"
+  short_description: "分析異動關聯並提出 staging 分組與 Conventional Commit 訊息"
+  default_prompt: "使用 $git-commit-advisor 分析目前 repository 異動，建議應一起 stage 的檔案與 commit 訊息；先不要實際提交。"

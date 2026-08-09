@@ -1,0 +1,44 @@
+{
+  "skill_name": "git-commit-advisor",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "請分析目前 repo 的異動，告訴我哪些應該一起 git add，並給 commit message。工作樹同時有登入功能程式與測試、README 拼字修正、未追蹤的 .env.local 和 debug.log。不要幫我提交。",
+      "expected_output": "將登入功能與測試歸為一組，拆開無關 README，排除秘密與 debug 檔，只提供精確 staging 指令及 Conventional Commit 建議，不改變 Git 狀態。",
+      "files": [],
+      "expectations": [
+        "依功能目的分組，而不是將所有異動放入同一 commit",
+        "明確排除 .env.local 與 debug.log，並提醒秘密或產物風險",
+        "提供精確 git add 路徑與 Conventional Commit 訊息",
+        "明確表示沒有執行 git add 或 git commit",
+        "commit 訊息沒有把任何 AI 工具列為協作者、作者或生成來源"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "幫我整理這批 TypeORM 異動怎麼 commit：Category 與 SkillItem entity 改了關聯，新增對應 migration，也更新了直接驗證關聯的測試；另外 docs/problems 有一批舊筆記重新編號。只要建議。",
+      "expected_output": "把 entities、migration 與直接測試視為同一可部署行為，將 problems 文件重新編號拆成另一 commit，說明理由並提供兩則 Conventional Commit 訊息。",
+      "files": [],
+      "expectations": [
+        "entity、migration 與直接測試被歸入同一功能或修正 commit",
+        "文件重新編號被拆成獨立 docs commit",
+        "每組都說明檔案相關性並提供 staging 建議",
+        "只提供建議且不執行 repository 寫入操作",
+        "所有 commit 訊息均未包含 AI、agent 或自動化工具的協作歸因"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "請把你建議的第一組異動 add 並 commit，第二組先留著，不要 push。",
+      "expected_output": "僅 stage 並提交第一組，提交前複查 staged diff，不碰第二組且不 push，回報 commit hash、納入檔案及剩餘異動。",
+      "files": [],
+      "expectations": [
+        "只處理使用者明確指定的第一組異動",
+        "commit 前重新檢查 staged diff",
+        "不執行 push，也不處理第二組",
+        "回報 commit hash、實際納入檔案與尚未提交異動",
+        "commit subject、body 與 trailers 都不包含 AI 協作內容"
+      ]
+    }
+  ]
+}
