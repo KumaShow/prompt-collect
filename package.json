@@ -1,5 +1,5 @@
 {
-  "name": "prompt-skill-collect",
+  "name": "prompt-collect",
   "version": "0.0.0",
   "description": "",
   "main": "index.js",
@@ -9,9 +9,9 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter './apps/*' dev",
-    "dev:web": "pnpm --filter @prompt-skill-collect/web dev",
-    "dev:api": "pnpm --filter @prompt-skill-collect/api dev",
+    "dev": "pnpm --parallel --filter \"{./apps/*}\" dev",
+    "dev:web": "pnpm --filter @prompt-collect/web dev",
+    "dev:api": "pnpm --filter @prompt-collect/api dev",
     "build": "pnpm --recursive --if-present build",
     "typecheck": "pnpm --recursive --if-present typecheck",
     "lint": "pnpm --recursive --if-present lint",
