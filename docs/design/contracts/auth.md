@@ -62,7 +62,7 @@
 
 ---
 
-## `POST /auth/logout`　🚧 待填
+## `POST /auth/logout`
 
 **權限**：已登入
 **用途**：登出（PRD FR-03）
@@ -80,18 +80,18 @@
 {
   "status": "success",
   "message": "登出成功",
-  "data": null   // ❓ data 要 null 還是空物件？全站統一即可
+  "data": null
 }
 ```
 
 **錯誤回應**：無特有錯誤（僅共通 401 / 500）
 
 **實作注意事項**
-- ❓ 待填（依你上面的方案決定）
+- 目前先使用最簡方案：後端不做任何事，前端刪掉 localStorage 的 token
 
 ---
 
-## `GET /auth/me`　🚧 待填
+## `GET /auth/me`
 
 **權限**：已登入
 **用途**：取得目前登入者資訊（前端重新整理後還原登入狀態用）
@@ -105,8 +105,12 @@
   "status": "success",
   "message": "查詢成功",
   "data": {
-    // ❓ 待填：建議與 login 回應的 user 物件完全同形（id / name / email / role）
-    // 同一個「使用者」在不同 API 長不一樣，前端會很痛苦
+    "user": {
+      "id": 1,
+      "name": "管理員",
+      "email": "admin@example.com",
+      "role": "admin"
+    }
   }
 }
 ```
@@ -116,3 +120,6 @@
 **實作注意事項**
 - 白名單挑欄位，同 login 的警告
 - ❓ token 有效但使用者已被刪除時回什麼？（401 還是 404？想想前端拿到後會做什麼）
+  > 使用者已被刪除時，回 401 `UNAUTHENTICATED`。理由：
+  > - 登入狀態已失效，請重新登入
+  > 404 偏向找不到路由資源
