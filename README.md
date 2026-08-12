@@ -19,7 +19,7 @@
 ## 專案結構
 
 ```
-prompt-skill-collect/
+prompt-collect/
 ├─ apps/
 │  ├─ api/                  後端 API
 │  │  ├─ src/

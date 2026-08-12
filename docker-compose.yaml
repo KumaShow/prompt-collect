@@ -1,4 +1,4 @@
-name: prompt-skill-collect
+name: prompt-collect
 
 services: 
   postgres:
