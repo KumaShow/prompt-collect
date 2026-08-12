@@ -32,7 +32,7 @@
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIs...",
     "user": {
-      "id": 1,
+      "id": "uuid string",
       "name": "管理員",
       "email": "admin@example.com",
       "role": "admin"
@@ -47,9 +47,21 @@
 
 | 狀態碼 | 情境 | `code` | `message` |
 |---:|---|---|---|
-| 400 | email 格式錯誤 / 缺欄位 | `VALIDATION_ERROR` | 請輸入正確的帳號與密碼 |
+| 400 | email 格式錯誤 / 缺欄位 | `VALIDATION_ERROR` | 輸入資料有誤 |
 | 401 | 帳號不存在 **或** 密碼錯誤 | `INVALID_CREDENTIALS` | 帳號或密碼錯誤 |
-| 500 | 未預期錯誤 | `INTERNAL_ERROR` | 系統發生錯誤，請稍後再試 |
+
+400 依 G-02 帶 `errors` 逐欄位明細（zod issues 直接映射），與其他端點的驗證錯誤形狀一致：
+
+```jsonc
+{
+  "status": "error",
+  "code": "VALIDATION_ERROR",
+  "message": "輸入資料有誤",
+  "errors": [
+    { "field": "email", "message": "請輸入合法的 email" }
+  ]
+}
+```
 
 > ⚠️ **「帳號不存在」和「密碼錯誤」必須回完全相同的狀態碼、code 和訊息**（PRD 第十五節明確要求）。
 > 否則攻擊者可以用不同的回應區分出哪些 email 有註冊過，這叫**使用者列舉（user enumeration）**。
@@ -62,15 +74,20 @@
 
 ---
 
-## `POST /auth/logout`
+## `POST /auth/logout`　✅ 已定稿
 
 **權限**：已登入
 **用途**：登出（PRD FR-03）
 
-> 💭 **先想清楚**：JWT 是無狀態的，後端沒有 session 可以銷毀。「登出」後端實際能做什麼？
+> 💭 **思考過程**：JWT 是無狀態的，後端沒有 session 可以銷毀。「登出」後端實際能做什麼？
 > - 最簡方案：後端只回成功，前端刪掉 localStorage 的 token——token 在到期前其實仍有效
-> - 完整方案：token blacklist（需要儲存與查詢，等於把無狀態變有狀態）——18 天工期下值得嗎？
-> 你選哪個？理由寫下來，這是發表時的好題材。
+> - 完整方案：token blacklist（需要儲存與查詢，等於把無狀態變有狀態）
+>
+> ✅ **決定（2026-08-12）**：採**最簡方案**。理由：
+> - blacklist 需要額外的儲存，且**每次**認證請求都要多一次查詢——等於把無狀態的 JWT 變回有狀態，失去選 JWT 的初衷；剩 13 天工期，成本不符 MVP 效益（FR-03 僅 Should 級）
+> - access token 有效期僅 1 小時（G-05），登出後 token 殘留的風險窗口有限，這個專案的資料敏感度下可接受
+> - 未來若有「強制登出 / 撤銷」需求，再與 refresh token 流程一併設計（見 G-05 的未來優化）
+> - 這個取捨是發表「自己的判斷」的素材（PRD 第二十三、二十四節）
 
 **Request Body**：無
 
@@ -87,11 +104,11 @@
 **錯誤回應**：無特有錯誤（僅共通 401 / 500）
 
 **實作注意事項**
-- 目前先使用最簡方案：後端不做任何事，前端刪掉 localStorage 的 token
+- 最簡方案：後端不做任何事，直接回成功；前端負責刪掉 localStorage 的 token
 
 ---
 
-## `GET /auth/me`
+## `GET /auth/me`　✅ 已定稿
 
 **權限**：已登入
 **用途**：取得目前登入者資訊（前端重新整理後還原登入狀態用）
@@ -106,7 +123,7 @@
   "message": "查詢成功",
   "data": {
     "user": {
-      "id": 1,
+      "id": "uuid string",
       "name": "管理員",
       "email": "admin@example.com",
       "role": "admin"
@@ -119,7 +136,6 @@
 
 **實作注意事項**
 - 白名單挑欄位，同 login 的警告
-- ❓ token 有效但使用者已被刪除時回什麼？（401 還是 404？想想前端拿到後會做什麼）
-  > 使用者已被刪除時，回 401 `UNAUTHENTICATED`。理由：
-  > - 登入狀態已失效，請重新登入
-  > 404 偏向找不到路由資源
+- ✅ **決定**：token 有效但使用者已被刪除時，回 401 `UNAUTHENTICATED`。理由：
+  - 對前端而言登入狀態已失效，401 會觸發 interceptor 清除 token 並導回登入頁重新登入
+  - 404 語意偏向「找不到路由或資源」，前端拿到 404 不會清除失效的 token

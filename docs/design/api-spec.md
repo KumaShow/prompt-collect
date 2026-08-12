@@ -174,8 +174,8 @@ PRD 第十四節已給定狀態碼與訊息，錯誤碼命名 ✅ 2026-08-10 定
 |---|---|---|---|---|
 | `GET` | `/health` | 公開 | 服務狀態（FR-01） | ✅ 已實作 |
 | `POST` | `/auth/login` | 公開 | 登入（FR-02） | ✅ [auth.md](./contracts/auth.md) |
-| `POST` | `/auth/logout` | 已登入 | 登出（FR-03） | 🚧 [auth.md](./contracts/auth.md) |
-| `GET` | `/auth/me` | 已登入 | 目前登入者 | 🚧 [auth.md](./contracts/auth.md) |
+| `POST` | `/auth/logout` | 已登入 | 登出（FR-03） | ✅ [auth.md](./contracts/auth.md) |
+| `GET` | `/auth/me` | 已登入 | 目前登入者 | ✅ [auth.md](./contracts/auth.md) |
 
 ### 前台
 
@@ -232,8 +232,8 @@ PRD 第十四節已給定狀態碼與訊息，錯誤碼命名 ✅ 2026-08-10 定
 
 **[contracts/auth.md](./contracts/auth.md)**（Phase 2 前）
 - [x] `POST /auth/login`
-- [ ] `POST /auth/logout` ← 想清楚無狀態的 JWT，「登出」後端實際能做什麼
-- [ ] `GET /auth/me`
+- [x] `POST /auth/logout`（✅ 2026-08-12 定稿：最簡方案，決策理由見契約）
+- [x] `GET /auth/me`（✅ 2026-08-12 定稿：使用者已刪除回 401）
 
 **[contracts/categories.md](./contracts/categories.md)**（admin 部分 Phase 3 前、`GET /categories` Phase 4 前）
 - [ ] `GET /categories` ← 先決定要不要照 G-04 分頁（下拉選單情境）
