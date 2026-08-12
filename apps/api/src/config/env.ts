@@ -20,6 +20,14 @@
 import 'dotenv/config'
 import { z } from 'zod'
 
+// jwt.sign() 的 expiresIn 可接受「秒數 number」或「JWT 期間字串」；
+// 這裡先收斂成我們專案允許的值，避免 .env 內的字串被視為任意 string，
+// 造成 TypeScript 無法滿足 jsonwebtoken 的 overload 型別。
+const jwtExpiresInSchema = z.union([
+  z.number().int().positive(),
+  z.enum(['15m', '1h', '7d', '30d'])
+])
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
@@ -37,10 +45,10 @@ const envSchema = z.object({
 
   // 兩組 secret 都要求 32 字元下限，避免用過短的字串簽 token 而被暴力破解
   JWT_ACCESS_SECRET: z.string().min(32),
-  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+  JWT_ACCESS_EXPIRES_IN: jwtExpiresInSchema.default('1h'),
 
   JWT_REFRESH_SECRET: z.string().min(32),
-  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  JWT_REFRESH_EXPIRES_IN: jwtExpiresInSchema.default('7d'),
 
   // 每 +1 雜湊耗時翻倍：低於 10 不安全，高於 15 會拖慢登入／註冊
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(10)
