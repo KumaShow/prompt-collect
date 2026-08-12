@@ -1,20 +1,20 @@
 import bcrypt from 'bcrypt';
-import { appDataSource } from '../data-source.js';
+import { AppDataSource } from '../data-source.js';
 import { User } from '../entities/User.js';
 import { Category } from '../entities/Category.js';
 import { SkillItem } from '../entities/SkillItem.js';
 
 async function seed() {
-  await appDataSource.initialize();
+  await AppDataSource.initialize();
 
-  const userRepo = appDataSource.getRepository(User);
-  const categoryRepo = appDataSource.getRepository(Category);
-  const skillRepo = appDataSource.getRepository(SkillItem);
+  const userRepo = AppDataSource.getRepository(User);
+  const categoryRepo = AppDataSource.getRepository(Category);
+  const skillRepo = AppDataSource.getRepository(SkillItem);
 
   const existingUsers = await userRepo.count();
   if (existingUsers > 0) {
     console.log('Database already seeded. Skipping seeding process.');
-    await appDataSource.destroy();
+    await AppDataSource.destroy();
     return;
   }
 
@@ -71,7 +71,7 @@ async function seed() {
   ]);
 
   console.log('Database seeding completed successfully.');
-  await appDataSource.destroy();
+  await AppDataSource.destroy();
 }
 
 seed().catch((err) => {

@@ -16,7 +16,7 @@ import { Favorite } from './entities/Favorite.js';
 // 以此檔案的位置為基準解析 migration，避免受啟動指令的工作目錄影響。
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
-export const appDataSource = new DataSource({
+export const AppDataSource = new DataSource({
   type: 'postgres',
   host: env.DB_HOST,
   port: env.DB_PORT,

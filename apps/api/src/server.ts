@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { app } from './app.js';
 import { env } from './config/env.js';
-import { appDataSource } from './database/data-source.js';
+import { AppDataSource } from './database/data-source.js';
 
 /**
  * 收到關機訊號後，等待進行中請求跑完的上限。
@@ -12,7 +12,7 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 async function bootstrap(): Promise<void> {
   try {
-    await appDataSource.initialize();
+    await AppDataSource.initialize();
 
     const server = app.listen(env.PORT, () => {
       console.log(`Server 啟動在 http://localhost:${env.PORT}`);
