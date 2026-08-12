@@ -10,7 +10,7 @@ const unauthenticatedResponse = (res: Response) =>
     message: '請先登入',
   });
 
-const authMiddleware = (req: Request, res: Response, next: () => void) => {
+export const authMiddleware = (req: Request, res: Response, next: () => void) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return unauthenticatedResponse(res);
@@ -31,4 +31,3 @@ const authMiddleware = (req: Request, res: Response, next: () => void) => {
   }
 };
 
-export default authMiddleware;
