@@ -52,8 +52,8 @@
 - [x] 想清楚關聯再動手：
   - Category ↔ SkillItem 是什麼關係？
   - Favorite 為什麼是 User 和 SkillItem 的「中間表」？主鍵怎麼設計才能防止重複收藏（PRD 邊界情境）？
-- [ ] 建立 seed script：塞入 1 個 admin、1 個 member 測試帳號（密碼要先過 bcrypt）、2-3 個類別、5-10 筆範例 Prompt/Skill
-- [ ] 用 TypeORM 的 synchronize 或 migration 把資料表建出來（先搞懂兩者差別與風險）
+- [x] 建立 seed script：塞入 1 個 admin、1 個 member 測試帳號（密碼要先過 bcrypt）、2-3 個類別、5-10 筆範例 Prompt/Skill
+- [x] 用 TypeORM 的 synchronize 或 migration 把資料表建出來（先搞懂兩者差別與風險）
 
 **引導問題**
 - `synchronize: true` 為什麼不能用在正式環境？
