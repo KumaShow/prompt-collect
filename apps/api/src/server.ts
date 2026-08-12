@@ -46,7 +46,7 @@ async function bootstrap(): Promise<void> {
 
       const closeDatabase = async (): Promise<void> => {
         try {
-          if (appDataSource.isInitialized) await appDataSource.destroy();
+          if (AppDataSource.isInitialized) await AppDataSource.destroy();
         } catch (err) {
           // destroy 失敗不該卡住關機流程，記錄後照樣退出
           console.error('Error closing DB:', err);
