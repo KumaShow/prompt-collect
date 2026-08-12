@@ -9,3 +9,4 @@
 - [Category 與 SkillItem 的一對多 Relation](./003-category-skill-item-relation.md)
 - [TypeORM migration 指令與 `<path>` 必填錯誤](./004-typeorm-migration-cli.md)
 - [ESM Entity 循環依賴與 `Relation<T>`](./005-esm-entity-circular-dependency.md)
+- [Seed 的 `categoryId` 與 `!`：從關聯型別到外鍵實際值](./006-seed-category-id-undefined.md)
