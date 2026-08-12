@@ -4,8 +4,8 @@
 - **分類**：Express + TypeScript
 - **首次討論日期**：2026-08-11
 - **最後更新日期**：2026-08-11
-- **討論來源**：本次對話（auth.ts middleware 重構）
-- **相關檔案**：`apps/api/src/middleware/auth.ts`、`apps/api/src/types/express/index.d.ts`、`apps/api/src/modules/auth/auth.types.ts`
+- **討論來源**：本次對話（auth.middleware.ts middleware 重構）
+- **相關檔案**：`apps/api/src/middleware/auth.middleware.ts`、`apps/api/src/types/express/index.d.ts`、`apps/api/src/modules/auth/auth.types.ts`
 - **狀態**：已驗證
 - **關鍵字**：`declare module`、ambient declaration、Request augmentation、`tsconfig include`
 
@@ -15,7 +15,7 @@
 
 ## 2. 問題現象與上下文
 
-原本三個型別 / 宣告都直接寫在 `apps/api/src/middleware/auth.ts` 裡，與 middleware 的實際邏輯混在同一支檔案。
+原本三個型別 / 宣告都直接寫在 `apps/api/src/middleware/auth.middleware.ts` 裡，與 middleware 的實際邏輯混在同一支檔案。
 
 ## 3. 原因與關鍵觀念
 
@@ -30,7 +30,7 @@
 
 1. 新增 `apps/api/src/modules/auth/auth.types.ts`：放 `AuthErrorCode`（附 `TODO:` 註解提醒未來是否搬進 `packages/contracts`）與 `AuthTokenPayload`。
 2. 新增 `apps/api/src/types/express/index.d.ts`：只放 `declare module 'express'` 的 `Request.user` 擴充，import `AuthTokenPayload` 型別。
-3. `auth.ts` 改為 `import type { AuthErrorCode, AuthTokenPayload } from '../modules/auth/auth.types.js'`，middleware 邏輯本身不變。
+3. `auth.middleware.ts` 改為 `import type { AuthErrorCode, AuthTokenPayload } from '../modules/auth/auth.types.js'`，middleware 邏輯本身不變。
 
 ## 5. 採用與驗證結果
 
@@ -38,7 +38,7 @@
 |---|---|---|
 | 拆出 `auth.types.ts` | 已採用 | 檔案已建立，`get_errors` 檢查無錯誤 |
 | 拆出 `types/express/index.d.ts` | 已採用 | 檔案已建立，`get_errors` 檢查無錯誤 |
-| `auth.ts` 改為 import 型別 | 已採用 | `auth.ts` 目前內容已改為 `import type`，經檔案讀取覆核確認 |
+| `auth.middleware.ts` 改為 import 型別 | 已採用 | `auth.middleware.ts` 目前內容已改為 `import type`，經檔案讀取覆核確認 |
 
 ## 6. 容易混淆的觀念
 

@@ -6,7 +6,7 @@
 - **首次討論日期**：2026-08-11
 - **最後更新日期**：2026-08-11
 - **討論來源**：本次對話（auth.md 契約審查與 TypeScript 型別設計討論）
-- **相關檔案**：`docs/design/contracts/auth.md`、`docs/design/api-spec.md`、`docs/PRD.md`、`apps/api/src/middleware/auth.ts`
+- **相關檔案**：`docs/design/contracts/auth.md`、`docs/design/api-spec.md`、`docs/PRD.md`、`apps/api/src/middleware/auth.middleware.ts`
 - **狀態**：部分完成
 - **關鍵字**：`enum`、`interface`、`type union`、HTTP status code、`VALIDATION_ERROR`、`UNAUTHENTICATED`
 
@@ -58,7 +58,7 @@
 | `/auth/me` 錯誤範例移除 `data`、訊息改為「請先登入」 | 已採用 | [auth.md](../../design/contracts/auth.md) 目前內容已更新，經檔案讀取覆核確認 |
 | 錯誤碼型別用 string union 而非 enum | 已採用 | 已套用在 `apps/api/src/modules/auth/auth.types.ts` 的 `AuthErrorCode` |
 | `PRD.md` 第十四節補充 `code` 欄位 | 未採用 | `PRD.md` 尚未修改 |
-| HTTP 狀態碼不重複放入 body | 已驗證 | `apps/api/src/middleware/auth.ts` 的 `unauthenticatedResponse` 只在 body 放 `code` 字串，狀態碼透過 `res.status(401)` 設定 |
+| HTTP 狀態碼不重複放入 body | 已驗證 | `apps/api/src/middleware/auth.middleware.ts` 的 `unauthenticatedResponse` 只在 body 放 `code` 字串，狀態碼透過 `res.status(401)` 設定 |
 
 ## 6. 容易混淆的觀念
 

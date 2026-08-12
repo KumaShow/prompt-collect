@@ -4,8 +4,8 @@
 - **分類**：Express + TypeScript
 - **首次討論日期**：2026-08-11
 - **最後更新日期**：2026-08-11
-- **討論來源**：本次對話（auth.ts middleware 型別修正）
-- **相關檔案**：`apps/api/src/middleware/auth.ts`、`apps/api/src/modules/auth/auth.types.ts`、`apps/api/src/database/entities/User.ts`
+- **討論來源**：本次對話（auth.middleware.ts middleware 型別修正）
+- **相關檔案**：`apps/api/src/middleware/auth.middleware.ts`、`apps/api/src/modules/auth/auth.types.ts`、`apps/api/src/database/entities/User.ts`
 - **狀態**：已驗證
 - **關鍵字**：JWT payload、UUID、`PrimaryGeneratedColumn`、`any` 型別
 
@@ -15,7 +15,7 @@
 
 ## 2. 問題現象與上下文
 
-在修正 `apps/api/src/middleware/auth.ts` 的 lint 錯誤（消除 `any`）時，定義了：
+在修正 `apps/api/src/middleware/auth.middleware.ts` 的 lint 錯誤（消除 `any`）時，定義了：
 
 ```ts
 interface AuthTokenPayload {

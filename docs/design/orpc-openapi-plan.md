@@ -145,7 +145,7 @@ apps/
 │     ├─ orpc/
 │     │  ├─ context.ts                  # request headers、DataSource 等 initial context
 │     │  ├─ middleware/
-│     │  │  ├─ auth.ts                  # JWT 驗證並注入 user
+│     │  │  ├─ auth.middleware.ts                  # JWT 驗證並注入 user
 │     │  │  └─ require-role.ts          # admin/member 授權
 │     │  ├─ router.ts                   # 組合所有 procedure implementations
 │     │  └─ handler.ts                  # OpenAPIHandler + Swagger plugin
