@@ -13,6 +13,7 @@ description: 分析 Git repository 的 staged、unstaged、untracked 與 deleted
 - 「幫我看怎麼 commit」、「整理一下 commit」或「給我 commit 訊息」都只代表提供建議，不代表授權提交。
 - 使用者明確要求 commit 時，只 stage 並提交已確認的那一組異動。除非另有明確要求，不 amend、不 push，也不處理其他組。
 - 保留使用者既有 staged 狀態。若 staged 區混入不同目的的變更，先指出問題並建議如何拆分，不擅自重排。
+- 每個建議或實際使用的 commit 訊息都包含 subject 與條列式 body；body 讓日後只看 Git history 也能理解此 commit 的具體內容。只有使用者明確要求單行訊息時才省略 body。
 - Commit 訊息只描述產品或程式碼本身的變更，不把 AI、agent、assistant、模型或其他自動化工具寫成作者、協作者或內容產生來源，也不加入相關共同作者 trailer。若異動本身就是 AI 產品功能，仍應如實描述功能，不混入協作歸因。
 - 不因分析需要而修改全域或 repository Git 設定。遇到 `safe.directory` 等環境問題時，優先使用單次唯讀參數；無法安全讀取時再說明限制。
 
@@ -73,15 +74,44 @@ description: 分析 Git repository 的 staged、unstaged、untracked 與 deleted
 
 ```text
 <type>(<optional-scope>): <imperative summary>
+
+- <具體變更或目的>
+- <另一項具體變更或必要影響>
 ```
 
 - 常用 type：`feat`、`fix`、`refactor`、`test`、`docs`、`chore`、`build`、`ci`、`perf`、`style`、`revert`。
 - scope 只有在 repository 慣例或模組邊界明確時才加，不為了形式硬造 scope。
 - summary 聚焦「改變了什麼」，簡潔、具體，不使用句號結尾。
 - breaking change 使用 `!` 並在 body/footer 清楚說明。
-- 異動需要解釋動機、migration、相容性或驗證資訊時，再提供簡短 body；簡單 commit 不硬加 body。
+- subject 與 body 之間保留一個空行，body 使用 `- ` 開頭的條列，不把所有內容擠成一段文字。
+- 每個 body 至少有一項，通常以 2–4 項為宜；記錄實際做了什麼，以及從 diff 能確認的目的、影響或必要同步內容，不只是重述 subject。
+- 單一目的 commit 使用平面條列；同一 commit 合理包含多個子項目時，先用分類標籤，再用縮排條列說明各分類內容。
+- migration、相容性、環境變數、驗證結果或未完成事項只有在與本次異動直接相關且有證據時才寫入，不虛構執行過的測試或背景。
+- body 應記錄語意與理由，不逐一抄寫已在 staging 清單列出的檔名；只有檔名本身有助理解時才提及。
 - 若使用者指定語言或 repository 有一致慣例，沿用該語言；否則以 repository 近期 commits 的主要語言為準。
 - 交付前重新掃描完整訊息，包括 subject、body 與 trailers，確保沒有任何 AI 工具協作、生成來源或共同作者歸因。
+
+單一目的範例：
+
+```text
+feat(api): 建立登入驗證流程
+
+- 新增登入服務與 JWT 簽發流程
+- 加入帳密錯誤與輸入驗證的 API 測試
+```
+
+同一 commit 含多個相關子項目的分類範例：
+
+```text
+chore(repo): 建立 repository 指南與開發流程 skills
+
+- Repository guidelines:
+  - 補充專案結構、開發指令、測試與安全性規範
+- Git commit advisor:
+  - 定義異動分組、staging 建議與 commit 訊息格式
+- Development problem recorder:
+  - 統一問題紀錄、驗證證據與分類索引流程
+```
 
 ### 6. 明確要求執行時
 
@@ -99,7 +129,7 @@ description: 分析 Git repository 的 staged、unstaged、untracked 與 deleted
 
 沒有異動時，直接說明 worktree clean。只有一組時省略多餘的分組層級；有多組時依建議提交順序排列：
 
-```markdown
+````markdown
 ## 異動判讀
 
 簡述 staged／unstaged／untracked 現況及主要風險。
@@ -116,11 +146,17 @@ description: 分析 Git repository 的 staged、unstaged、untracked 與 deleted
 `git add -- <paths>`
 
 建議訊息：
-`type(scope): summary`
+
+```text
+type(scope): summary
+
+- 具體變更或目的
+- 另一項具體變更或必要影響
+```
 
 ## 提交前提醒
 
 列出需要人工確認、建議測試或可能含秘密資料的事項；沒有則省略。
-```
+````
 
 最後明確說明目前「僅提供建議，尚未 stage 或 commit」，除非本次確實已依使用者要求執行。
