@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { env } from './config/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import routes from './routes/index.js';
+import { AppError } from './errors/appError.js';
 
 export const app = express();
 
@@ -26,5 +27,9 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api', routes);
+
+app.use((_req, _res, next) => {
+  next(new AppError(404, 'NOT_FOUND', '找不到資料'));
+})
 
 app.use(errorHandler);
