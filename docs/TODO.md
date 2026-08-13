@@ -2,7 +2,7 @@
 
 > 依據 [PRD.md](./PRD.md) 拆解的分階段開發清單。
 > 開發者：獨立開發（Vue 前端工程師，Node.js 初學者）
-> 今天：2026-08-08 ｜ 成果發表：2026-08-21（**剩 13 天**，目前仍在完成 Phase 1）
+> 今天：2026-08-13 ｜ 成果發表：2026-08-21（**剩 8 天**，目前 Phase 2 登入與認證實作中）
 
 ## 已確定的技術決策
 
@@ -67,13 +67,13 @@
 
 **學習目標**：JWT 的簽發與驗證、Express middleware 機制、角色權限檢查。這是 PRD 評分佔比最重的區塊之一（20 分）。
 
-- [ ] `POST /auth/login`：驗證 email + 密碼（bcrypt.compare），成功回傳 JWT（PRD FR-02）
-- [ ] JWT payload 要放什麼？（想想：為什麼放 userId 和 role，但不放密碼或敏感資料？）
-- [ ] 寫 `authMiddleware`：從 `Authorization: Bearer <token>` 取出並驗證 token，把使用者資訊掛到 request 上
+- [-] `POST /auth/login`：驗證 email + 密碼（bcrypt.compare），成功回傳 JWT（PRD FR-02）（🚧 已實作，待 REST client 驗收）
+- [x] JWT payload 要放什麼？（已決定放 `userId`、`role`，不放密碼或敏感資料）
+- [-] 寫 `authMiddleware`：從 `Authorization: Bearer <token>` 取出並驗證 token，把使用者資訊掛到 request 上（🚧 已實作，待驗收）
 - [ ] 寫 `requireRole('admin')` middleware：檢查角色，不足回 403（PRD FR-04）
-- [ ] `GET /auth/me`：回傳目前登入者資訊
-- [ ] `POST /auth/logout`：想清楚 —— JWT 是無狀態的，後端「登出」實際能做什麼？前端該做什麼？（這題答案值得寫進發表的「自己的判斷」）
-- [ ] 錯誤處理對齊 PRD 第十四節：401 帳密錯誤（不透露帳號是否存在）、401 未登入、403 權限不足
+- [-] `GET /auth/me`：回傳目前登入者資訊（🚧 已實作，待驗收）
+- [x] `POST /auth/logout`：想清楚 —— JWT 是無狀態的，後端「登出」實際能做什麼？前端該做什麼？（已決定 MVP 由後端回成功、前端清除 token）
+- [ ] 錯誤處理對齊 PRD 第十四節：401 帳密錯誤（不透露帳號是否存在）、401 未登入、403 權限不足（🚧 401 與統一錯誤回應已實作；403 待 `requireRole`）
 
 **引導問題**
 - middleware 的 `next()` 是做什麼的？middleware 掛的順序為什麼重要？
@@ -95,7 +95,7 @@
 - [ ] `POST /admin/skills` 新增 Prompt/Skill（FR-07），標題/內容空白回 400
 - [ ] `PATCH /admin/skills/:id`、`DELETE /admin/skills/:id`（FR-14）
 - [ ] 所有 `/admin/*` 路由都掛上 `requireRole('admin')`
-- [ ] 找不到資料回 404、統一的錯誤處理 middleware（500 兜底）
+- [ ] 找不到資料回 404、統一的錯誤處理 middleware（500 兜底）（🚧 全域 404/500 middleware 已實作；資源層 404 待管理 API）
 
 **引導問題**
 - 驗證邏輯寫在 route handler 裡好，還是抽成獨立層？程式碼開始重複時你會怎麼整理？
@@ -130,7 +130,7 @@
 **學習目標**：（你的舒適區，重點是前後端整合）CORS、token 的存放與夾帶、router guard。
 
 - [ ] `web/`：建立 Vue 3 專案（Vite），裝 vue-router、pinia、axios（或 fetch 封裝）
-- [ ] 後端加 `cors` 設定，理解為什麼瀏覽器需要它而 Postman 不用
+- [x] 後端加 `cors` 設定，理解為什麼瀏覽器需要它而 Postman 不用（API 已依 `CORS_ORIGIN` 設定）
 - [ ] 登入頁：呼叫 `/auth/login`，token 存放策略自己決定並能說出取捨（localStorage vs cookie）
 - [ ] axios interceptor：自動夾帶 token、401 時導回登入頁
 - [ ] 前台頁面：列表（含搜尋框 + 類別篩選）、詳情頁、我的收藏頁
