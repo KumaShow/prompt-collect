@@ -134,6 +134,7 @@
 - [ ] 登入頁：呼叫 `/auth/login`，token 存放策略自己決定並能說出取捨（localStorage vs cookie）
 - [ ] axios interceptor：自動夾帶 token、401 時導回登入頁
 - [ ] 前台頁面：列表（含搜尋框 + 類別篩選）、詳情頁、我的收藏頁
+  - ✅ UI 已定案（2026-08-14 prototype 比較三變體）：**卡片牆**——頂部搜尋 + 類別 chips + 響應式卡片格，**點擊卡片展開全文**（展開時橫跨整列）；勝過側欄清單與搜尋優先 master-detail 兩案。prototype 保存在 `prototype/skills-list-ui` 分支（丟棄式，勿合併；重看：checkout 該分支後 `pnpm dev:web` 開 `/prototype/skills-list`），正式實作用 Tailwind 重寫、不直接搬 prototype 程式碼
 - [ ] 收藏按鈕狀態要清楚（已收藏/未收藏，PRD 產品用心點）
 - [ ] 後台頁面：類別管理、Prompt/Skill 管理（表單 + 列表 + 編輯/刪除）
 - [ ] Router guard：未登入導去登入頁；member 進 `/admin` 導回前台（但記住：真正的防線在後端）
