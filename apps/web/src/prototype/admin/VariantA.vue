@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// PROTOTYPE — 後台變體 A「側欄分頁式」：傳統 admin。左側欄切換資源，
-// 新增/編輯是獨立表單頁（取代列表畫面），儲存/取消後回列表。
+// PROTOTYPE — 後台變體 A「側欄分頁式」：傳統 admin。左側欄切換資源。
+// 定案補充（2026-08-14）：新增/編輯不跳頁，改用置中彈窗 modal，列表保持在背景可見。
 import { ref } from 'vue'
 import {
   emptyCategoryInput,
@@ -15,24 +15,25 @@ import {
 const props = defineProps<{ store: AdminStore }>()
 
 const section = ref<'categories' | 'skills'>('categories')
-const mode = ref<'list' | 'form'>('list')
+const modalOpen = ref(false)
 const editingId = ref<string | null>(null)
 const categoryInput = ref<CategoryInput>(emptyCategoryInput())
 const skillInput = ref<SkillInput>(emptySkillInput())
-const error = ref<string | null>(null)
+const modalError = ref<string | null>(null)
+const listError = ref<string | null>(null)
 
 function switchSection(next: 'categories' | 'skills') {
   section.value = next
-  mode.value = 'list'
-  error.value = null
+  modalOpen.value = false
+  listError.value = null
 }
 
 function openCreate() {
   editingId.value = null
   categoryInput.value = emptyCategoryInput()
   skillInput.value = emptySkillInput()
-  error.value = null
-  mode.value = 'form'
+  modalError.value = null
+  modalOpen.value = true
 }
 
 function openEditCategory(id: string) {
@@ -40,8 +41,8 @@ function openEditCategory(id: string) {
   if (!target) return
   editingId.value = id
   categoryInput.value = toCategoryInput(target)
-  error.value = null
-  mode.value = 'form'
+  modalError.value = null
+  modalOpen.value = true
 }
 
 function openEditSkill(id: string) {
@@ -49,25 +50,25 @@ function openEditSkill(id: string) {
   if (!target) return
   editingId.value = id
   skillInput.value = toSkillInput(target)
-  error.value = null
-  mode.value = 'form'
+  modalError.value = null
+  modalOpen.value = true
 }
 
 function save() {
   if (section.value === 'categories') {
-    error.value = editingId.value
+    modalError.value = editingId.value
       ? props.store.updateCategory(editingId.value, categoryInput.value)
       : props.store.createCategory(categoryInput.value)
   } else {
-    error.value = editingId.value
+    modalError.value = editingId.value
       ? props.store.updateSkill(editingId.value, skillInput.value)
       : props.store.createSkill(skillInput.value)
   }
-  if (!error.value) mode.value = 'list'
+  if (!modalError.value) modalOpen.value = false
 }
 
 function remove(id: string) {
-  error.value =
+  listError.value =
     section.value === 'categories' ? props.store.deleteCategory(id) : props.store.deleteSkill(id)
 }
 </script>
@@ -98,75 +99,74 @@ function remove(id: string) {
     </aside>
 
     <main class="aa-main">
-      <p v-if="error" class="aa-error">⚠ {{ error }}</p>
+      <p v-if="listError" class="aa-error">⚠ {{ listError }}</p>
 
-      <!-- 列表模式 -->
-      <template v-if="mode === 'list'">
-        <div class="aa-toolbar">
-          <h2 class="aa-title">
-            {{ section === 'categories' ? '類別管理' : 'Prompt / Skill 管理' }}
-          </h2>
-          <button type="button" class="aa-btn aa-btn-primary" @click="openCreate">
-            ＋ 新增{{ section === 'categories' ? '類別' : '資料' }}
-          </button>
-        </div>
+      <div class="aa-toolbar">
+        <h2 class="aa-title">
+          {{ section === 'categories' ? '類別管理' : 'Prompt / Skill 管理' }}
+        </h2>
+        <button type="button" class="aa-btn aa-btn-primary" @click="openCreate">
+          ＋ 新增{{ section === 'categories' ? '類別' : '資料' }}
+        </button>
+      </div>
 
-        <table v-if="section === 'categories'" class="aa-table">
-          <thead>
-            <tr>
-              <th>名稱</th>
-              <th>說明</th>
-              <th class="num">資料數</th>
-              <th class="actions">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="c in store.categories" :key="c.id">
-              <td class="strong">{{ c.name }}</td>
-              <td class="muted">{{ c.description ?? '—' }}</td>
-              <td class="num">{{ store.skillCount(c.id) }}</td>
-              <td class="actions">
-                <button type="button" class="aa-btn" @click="openEditCategory(c.id)">編輯</button>
-                <button type="button" class="aa-btn aa-btn-danger" @click="remove(c.id)">
-                  刪除
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <table v-if="section === 'categories'" class="aa-table">
+        <thead>
+          <tr>
+            <th>名稱</th>
+            <th>說明</th>
+            <th class="num">資料數</th>
+            <th class="actions">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="c in store.categories" :key="c.id">
+            <td class="strong">{{ c.name }}</td>
+            <td class="muted">{{ c.description ?? '—' }}</td>
+            <td class="num">{{ store.skillCount(c.id) }}</td>
+            <td class="actions">
+              <button type="button" class="aa-btn" @click="openEditCategory(c.id)">編輯</button>
+              <button type="button" class="aa-btn aa-btn-danger" @click="remove(c.id)">刪除</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-        <table v-else class="aa-table">
-          <thead>
-            <tr>
-              <th>標題</th>
-              <th>類別</th>
-              <th>標籤</th>
-              <th class="actions">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in store.skills" :key="s.id">
-              <td class="strong">{{ s.title }}</td>
-              <td>{{ store.categoryName(s.categoryId) }}</td>
-              <td class="muted">{{ s.tags.join(', ') || '—' }}</td>
-              <td class="actions">
-                <button type="button" class="aa-btn" @click="openEditSkill(s.id)">編輯</button>
-                <button type="button" class="aa-btn aa-btn-danger" @click="remove(s.id)">
-                  刪除
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </template>
+      <table v-else class="aa-table">
+        <thead>
+          <tr>
+            <th>標題</th>
+            <th>類別</th>
+            <th>標籤</th>
+            <th class="actions">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="s in store.skills" :key="s.id">
+            <td class="strong">{{ s.title }}</td>
+            <td>{{ store.categoryName(s.categoryId) }}</td>
+            <td class="muted">{{ s.tags.join(', ') || '—' }}</td>
+            <td class="actions">
+              <button type="button" class="aa-btn" @click="openEditSkill(s.id)">編輯</button>
+              <button type="button" class="aa-btn aa-btn-danger" @click="remove(s.id)">刪除</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
 
-      <!-- 表單模式（獨立頁） -->
-      <template v-else>
-        <div class="aa-toolbar">
-          <h2 class="aa-title">
+    <!-- 彈窗 modal 表單（不跳頁，列表留在背景） -->
+    <div v-if="modalOpen" class="aa-scrim" @click.self="modalOpen = false">
+      <div class="aa-modal" role="dialog" aria-modal="true">
+        <div class="aa-modal-head">
+          <h2 class="aa-modal-title">
             {{ editingId ? '編輯' : '新增' }}{{ section === 'categories' ? '類別' : '資料' }}
           </h2>
+          <button type="button" class="aa-close" aria-label="關閉" @click="modalOpen = false">
+            ✕
+          </button>
         </div>
+        <p v-if="modalError" class="aa-error">⚠ {{ modalError }}</p>
 
         <form class="aa-form" @submit.prevent="save">
           <template v-if="section === 'categories'">
@@ -213,13 +213,11 @@ function remove(id: string) {
 
           <div class="aa-form-actions">
             <button type="submit" class="aa-btn aa-btn-primary">儲存</button>
-            <button type="button" class="aa-btn" @click="((mode = 'list'), (error = null))">
-              取消
-            </button>
+            <button type="button" class="aa-btn" @click="modalOpen = false">取消</button>
           </div>
         </form>
-      </template>
-    </main>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -374,15 +372,47 @@ function remove(id: string) {
 .aa-btn-danger:hover {
   background: #fef2f2;
 }
-.aa-form {
-  background: #fff;
-  border: 1px solid #e7e5e4;
-  border-radius: 10px;
+.aa-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(41, 37, 36, 0.45);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
+}
+.aa-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 26px;
+  width: min(520px, 94vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+.aa-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.aa-modal-title {
+  font-size: 18px;
+  margin: 0;
+}
+.aa-close {
+  border: 0;
+  background: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #78716c;
+}
+.aa-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-width: 560px;
+  gap: 14px;
 }
 .aa-field {
   display: flex;
