@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 const props = defineProps<{
   variants: { key: string; name: string }[]
   current: string
-  favoriteCount: number
+  favoriteCount?: number
 }>()
 
 const route = useRoute()
@@ -49,7 +49,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
     <button type="button" aria-label="上一個變體" @click="go(-1)">←</button>
     <span class="label">
       <strong>{{ current }}</strong> — {{ currentName }}
-      <span class="fav">♥ {{ favoriteCount }}</span>
+      <span v-if="favoriteCount !== undefined" class="fav">♥ {{ favoriteCount }}</span>
     </span>
     <button type="button" aria-label="下一個變體" @click="go(1)">→</button>
   </div>

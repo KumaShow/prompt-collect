@@ -9,6 +9,11 @@ const router = createRouter({
       name: 'prototype-skills-list',
       component: () => import('../prototype/skills-list/SkillsListPrototypePage.vue'),
     },
+    {
+      path: '/prototype/admin',
+      name: 'prototype-admin',
+      component: () => import('../prototype/admin/AdminPrototypePage.vue'),
+    },
   ],
 })
 
