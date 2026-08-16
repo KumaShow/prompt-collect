@@ -36,6 +36,8 @@ Phase 5 寫 Vue 的時候，你會非常感謝現在把 response 形狀寫清楚
 
 **理由**：因為可能需要分頁資訊，統一放 `pagination` 物件（形狀見 G-04）；若需多語系則暫時由前端管理，message 只給「建立成功」這種簡單訊息即可。固定帶 message 讓所有成功回應形狀一致，前端 interceptor 不用分辨「有沒有 message」兩種情況。
 
+> **端點例外**：`DELETE /admin/categories/:id` 成功時回 `204 No Content`，依 HTTP 語意不帶 response body，因此不包含 G-01 的 `message` envelope。
+
 ---
 
 ### G-02 錯誤回應格式
@@ -77,7 +79,7 @@ Phase 5 寫 Vue 的時候，你會非常感謝現在把 response 形狀寫清楚
 
 ### G-04 列表端點的通用參數（✅ 2026-08-03：決定做完整分頁，前後端都做）
 
-依 [data-model.md](./data-model.md) 假設 A-01。適用於 `GET /skills`、`GET /categories`、`GET /me/favorites`。
+依 [data-model.md](./data-model.md) 假設 A-01。適用於 `GET /skills` 與 `GET /me/favorites`；`GET /categories` 是下拉選單用途的明確例外，不使用分頁，直接回傳全部類別。
 
 | 參數 | 用途 | 預設值 | 決定（✅ 2026-08-10） |
 |---|---|---|---|
@@ -149,6 +151,8 @@ PRD 第十四節已給定狀態碼與訊息，錯誤碼命名 ✅ 2026-08-10 定
 | 未登入 | 401 | 請先登入 | `UNAUTHENTICATED` |
 | 權限不足 | 403 | 你沒有權限執行此操作 | `FORBIDDEN` |
 | 類別名稱空白 | 400 | 請輸入類別名稱 | `VALIDATION_ERROR`＋`errors: [{ field: "name", ... }]` |
+| 類別名稱重複 | 409 | 類別名稱已存在 | `CATEGORY_NAME_EXISTS` |
+| 類別仍有 Skill | 409 | 此類別尚有資料，請先移動或刪除 Skill | `CATEGORY_HAS_SKILLS` |
 | Prompt / Skill 標題空白 | 400 | 請輸入標題 | `VALIDATION_ERROR`＋`errors: [{ field: "title", ... }]` |
 | Prompt / Skill 內容空白 | 400 | 請輸入內容 | `VALIDATION_ERROR`＋`errors: [{ field: "content", ... }]` |
 | 找不到資料 | 404 | 找不到指定資料 | `NOT_FOUND` |
@@ -181,7 +185,7 @@ PRD 第十四節已給定狀態碼與訊息，錯誤碼命名 ✅ 2026-08-10 定
 
 | Method | Path | 權限 | 說明 | 契約狀態 |
 |---|---|---|---|---|
-| `GET` | `/categories` | 已登入 | 類別列表（FR-06） | 🚧 [categories.md](./contracts/categories.md) |
+| `GET` | `/categories` | 已登入 | 類別列表（FR-06） | ✅ [categories.md](./contracts/categories.md) |
 | `GET` | `/skills` | 已登入 | 列表 + `keyword` + `categoryId` + 分頁（FR-08/10/11） | 🚧 [skills.md](./contracts/skills.md) |
 | `GET` | `/skills/:id` | 已登入 | 詳情（FR-09） | 🚧 [skills.md](./contracts/skills.md) |
 | `POST` | `/favorites/:skillId` | **已登入** | 收藏（FR-12） | 🚧 [favorites.md](./contracts/favorites.md) |
@@ -195,12 +199,15 @@ PRD 第十四節已給定狀態碼與訊息，錯誤碼命名 ✅ 2026-08-10 定
 
 | Method | Path | 權限 | 說明 | 契約狀態 |
 |---|---|---|---|---|
-| `POST` | `/admin/categories` | admin | 新增類別（FR-05） | 🚧 [categories.md](./contracts/categories.md) |
-| `PATCH` | `/admin/categories/:id` | admin | 編輯類別 | 🚧 [categories.md](./contracts/categories.md) |
-| `DELETE` | `/admin/categories/:id` | admin | 刪除類別 | 🚧 [categories.md](./contracts/categories.md) |
+| `GET` | `/admin/categories` | admin | 後台類別管理列表（本專案補充，非原始 PRD） | ✅ [categories.md](./contracts/categories.md) |
+| `POST` | `/admin/categories` | admin | 新增類別（FR-05） | ✅ [categories.md](./contracts/categories.md) |
+| `PATCH` | `/admin/categories/:id` | admin | 編輯類別 | ✅ [categories.md](./contracts/categories.md) |
+| `DELETE` | `/admin/categories/:id` | admin | 刪除類別 | ✅ [categories.md](./contracts/categories.md) |
 | `POST` | `/admin/skills` | admin | 新增（FR-07） | 🚧 [skills.md](./contracts/skills.md) |
 | `PATCH` | `/admin/skills/:id` | admin | 編輯（FR-14） | 🚧 [skills.md](./contracts/skills.md) |
 | `DELETE` | `/admin/skills/:id` | admin | 刪除（FR-14） | 🚧 [skills.md](./contracts/skills.md) |
+
+> `GET /admin/categories` 是本專案為後台管理介面補充的 API，原始 PRD 未列出；它不改變前台 `GET /categories` 的用途與回應欄位。
 
 **引導問題**
 1. `POST /favorites/:skillId` 的權限標成 `member`。**管理者打這支 API 應該成功還是 403？**（對照 data-model.md 的 A-02）
@@ -235,11 +242,12 @@ PRD 第十四節已給定狀態碼與訊息，錯誤碼命名 ✅ 2026-08-10 定
 - [x] `POST /auth/logout`（✅ 2026-08-12 定稿：最簡方案，決策理由見契約）
 - [x] `GET /auth/me`（✅ 2026-08-12 定稿：使用者已刪除回 401）
 
-**[contracts/categories.md](./contracts/categories.md)**（admin 部分 Phase 3 前、`GET /categories` Phase 4 前）
-- [ ] `GET /categories` ← 先決定要不要照 G-04 分頁（下拉選單情境）
-- [ ] `POST /admin/categories`
-- [ ] `PATCH /admin/categories/:id`
-- [ ] `DELETE /admin/categories/:id` ← 有子資料時的錯誤回應
+**[contracts/categories.md](./contracts/categories.md)**（✅ 2026-08-13 定稿）
+- [x] `GET /categories`（不分頁，G-04 例外）
+- [x] `GET /admin/categories`（本專案補充，非原始 PRD；後台管理列表）
+- [x] `POST /admin/categories`
+- [x] `PATCH /admin/categories/:id`
+- [x] `DELETE /admin/categories/:id`（硬刪除；有子資料回 409）
 
 **[contracts/skills.md](./contracts/skills.md)**（admin 部分 Phase 3 前、前台 Phase 4 前）
 - [ ] `GET /skills` ← 含 `isFavorited` 那一題（第三節引導問題 4）

@@ -89,6 +89,7 @@
 
 **學習目標**：RESTful CRUD 設計、輸入驗證、Router 分層組織。
 
+- [ ] `GET /admin/categories` 後台類別管理列表（本專案補充，非原始 PRD）
 - [ ] `POST /admin/categories` 新增類別（FR-05），名稱空白回 400
 - [ ] `PATCH /admin/categories/:id`、`DELETE /admin/categories/:id`
 - [ ] 刪除類別的邊界情境：底下還有資料時要阻擋（PRD 第十五節）
