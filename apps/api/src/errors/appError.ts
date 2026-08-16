@@ -14,6 +14,9 @@ export class AppError extends Error {
   /** 是否為可預期的業務錯誤；true 表示可處理的錯誤 */
   public readonly isOperational: boolean
 
+  /** 逐欄位驗證明細，僅 400 驗證錯誤選填 */
+  public readonly errors?: Array<{ field: string; message: string }>
+
   /**
    * 建立一個應用程式層級的錯誤。
    *
@@ -21,12 +24,14 @@ export class AppError extends Error {
    * @param code 自訂錯誤代碼
    * @param message 錯誤訊息
    * @param isOperational 是否為業務可預期錯誤，預設為 true
+   * @param errors 逐欄位驗證明細，僅 400 驗證錯誤選填
    */
   constructor(
     statusCode: number,
     code: string,
     message: string,
     isOperational = true,
+    errors?: Array<{ field: string; message: string }>,
   ) {
     super(message)
 
@@ -34,6 +39,7 @@ export class AppError extends Error {
     this.statusCode = statusCode
     this.code = code
     this.isOperational = isOperational
+    this.errors = errors
 
     Error.captureStackTrace(this, AppError)
   }
